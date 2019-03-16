@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private Paint mPaint;
     private ImageView button;
     private int i = 0;
+    private String roomid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         RelativeLayout canvasLayout = findViewById(R.id.canvas);
         canvasLayout.addView(dv, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
+        setContentView(dv);
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setDither(true);
@@ -163,11 +166,10 @@ public class MainActivity extends AppCompatActivity {
                 mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
                 mX = x;
                 mY = y;
-
                 circlePath.reset();
                 circlePath.addCircle(mX, mY, 30, Path.Direction.CW);
             }
-            uploadCanvas();
+
         }
 
         private void touch_up() {
@@ -177,6 +179,7 @@ public class MainActivity extends AppCompatActivity {
             mCanvas.drawPath(mPath, mPaint);
             // kill this so we don't double draw
             mPath.reset();
+            uploadCanvas();
         }
 
         @Override
@@ -216,11 +219,12 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+                    mBitmap.compress(Bitmap.CompressFormat.PNG,80, byteArrayOutputStream);
                     byte[] bytes = byteArrayOutputStream.toByteArray();
-                    String base64 = Base64.encodeToString(bytes, Base64.DEFAULT);
+                    String base64 = "data:image/png;base64," + Base64.encodeToString(bytes, Base64.DEFAULT);
+                    base64 = base64.replace("\n", "|");
                     try {
-                        URL url = new URL("http://192.168.0.11:1234/drawing.php");
+                        URL url = new URL("http://192.168.29.40:2234/drawing.php");
                         httpURLConnection = (HttpURLConnection) url.openConnection();
 //                        httpURLConnection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
                         httpURLConnection.setReadTimeout(10000);
@@ -294,6 +298,43 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception e) {
             }
             mBitmap.compress(Bitmap.CompressFormat.JPEG, 80, fileOutputStream);
+        }
+
+    }
+
+
+    private void createRoom() throws IOException {
+        HttpURLConnection httpURLConnection = null;
+        try {
+            URL url = new URL("http://192.168.29.40:2234/drawing.php");
+            httpURLConnection = (HttpURLConnection) url.openConnection();
+//                        httpURLConnection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            httpURLConnection.setReadTimeout(10000);
+            httpURLConnection.setConnectTimeout(15000);
+            httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.connect();
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()));
+            InputStream inputStream = httpURLConnection.getInputStream();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            StringBuilder builder = new StringBuilder();
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+//            if (first) {
+                roomid = builder.toString();
+                System.out.println(roomid);
+//            }
+
+            AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+            alertDialog.setTitle("Room Created");
+
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
         }
 
     }
