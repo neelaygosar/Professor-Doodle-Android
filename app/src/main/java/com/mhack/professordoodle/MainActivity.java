@@ -1,18 +1,27 @@
 package com.mhack.professordoodle;
 
 import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Base64;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONException;
@@ -38,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
 
     DrawingView dv;
     private Paint mPaint;
+    private ImageView button;
     private int i = 0;
 
     @Override
@@ -45,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         dv = new DrawingView(this);
         setContentView(R.layout.activity_main);
+        RelativeLayout canvasLayout = findViewById(R.id.canvas);
+        canvasLayout.addView(dv, new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setDither(true);
@@ -53,14 +65,47 @@ public class MainActivity extends AppCompatActivity {
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeWidth(10);
+        button = findViewById(R.id.button1);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI), 1000);
+            }
+        });
+
     }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (requestCode == 1000 && data.getData() != null) {
+            String uri= getRealPathFromURI(data.getData().toString());
+            //.setImageBitmap(BitmapFactory.decodeFile(uri));
+//            if(mCanvas!=null){
+                mCanvas = new Canvas(BitmapFactory.decodeFile(uri).copy(Bitmap.Config.ARGB_8888, true));
+
+//            }
+
+
+        }}
+    private String getRealPathFromURI(String contentURI) {
+        Uri contentUri = Uri.parse(contentURI);
+        Cursor cursor = getContentResolver().query(contentUri, null, null, null, null);
+        if (cursor == null) {
+            return contentUri.getPath();
+        } else {
+            cursor.moveToFirst();
+            int index = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+            String t = cursor.getString(index);
+            cursor.close();
+            return t;
+        }
+    }
+    private Canvas mCanvas;
 
     public class DrawingView extends View {
 
         public int width;
         public int height;
         private Bitmap mBitmap;
-        private Canvas mCanvas;
         private Path mPath;
         private Paint mBitmapPaint;
         Context context;
