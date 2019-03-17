@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">ProfessorDoodle</string>
-    <string name="wlcm"><u><b><i>WELCOME TO PROFESSOR DOODLE</i></b></u></string>
+    <string name="wlcm"></string>
 </resources>
